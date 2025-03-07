@@ -20,6 +20,7 @@ LICENSE
 */
 #ifndef BAKR_H
 #define BAKR_H
+#define _CRT_SECURE_NO_WARNINGS
 
 /* #############################################################################
  * # COMPILER SETTINGS
