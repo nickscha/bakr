@@ -121,6 +121,7 @@ BAKR_API BAKR_INLINE bakr_internal_file bakr_internal_file_read(const char *file
     FILE *file;
 
     bakr_internal_file result = {0};
+    bakr_internal_file tmp = {0};
     result.name = filename;
 
     printf("[bakr] baking into header file: %s\n", filename);
@@ -141,14 +142,14 @@ BAKR_API BAKR_INLINE bakr_internal_file bakr_internal_file_read(const char *file
     if (!result.content)
     {
         fclose(file);
-        return (result);
+        return (tmp);
     }
 
     if (fread(result.content, 1, result.size, file) != result.size)
     {
         free(result.content);
         fclose(file);
-        return (result);
+        return (tmp);
     }
     result.content[result.size] = '\0'; /* Null-terminate in case it's text */
 
