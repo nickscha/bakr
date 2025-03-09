@@ -20,9 +20,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ubuntu-latest-${{ matrix.cc }}-bakr_test
-          path: |
-            tests/bakr_test_${{ matrix.cc }}.exe
-            tests/bakr_bin.h
+          path: tests/bakr_test_${{ matrix.cc }}
   macos:
     strategy:
       matrix:
@@ -39,9 +37,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: macos-latest-${{ matrix.cc }}-bakr_test
-          path: |
-            tests/bakr_test_${{ matrix.cc }}.exe
-            tests/bakr_bin.h
+          path: tests/bakr_test_${{ matrix.cc }}
   windows:
     strategy:
       matrix:
@@ -58,6 +54,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-latest-${{ matrix.cc }}-bakr_test
-          path: |
-            tests\bakr_test_${{ matrix.cc }}.exe
-            tests\bakr_bin.h
+          path: tests\bakr_test_${{ matrix.cc }}.exe
