@@ -160,11 +160,6 @@ BAKR_API BAKR_INLINE bakr_internal_file bakr_internal_file_read(const char *file
     return (result);
 }
 
-void bakr_internal_file_free(bakr_internal_file *file_data)
-{
-    free(file_data->content);
-}
-
 const char *bakr_internal_header_comment =
     "/* bakr.h - v%s - public domain data structures - %s %s\n"
     "\n"
@@ -173,37 +168,10 @@ const char *bakr_internal_header_comment =
     "See https://github.com/nickscha/bakr for more information.\n"
     "*/\n";
 
-BAKR_API BAKR_INLINE void bakr_internal_cook_file(FILE *output, bakr_internal_file file, bakr_recipe recipe)
-{
-    unsigned long i;
-
-    /* Content */
-    fprintf(output, "static unsigned char bakr_file_%s_content[] = {", recipe.name_normalized);
-    for (i = 0; i < file.size - 1; ++i)
-    {
-        fprintf(output, "0x%02X", file.content[i]);
-        if (i != file.size - 2)
-        {
-            fprintf(output, ", ");
-        }
-    }
-    fprintf(output, "};\n");
-
-    /* File struct */
-    fprintf(output, "static const bakr_file bakr_file_%s = {", recipe.name_normalized);
-    fprintf(output, "%li, ", file.size);
-    fprintf(output, "{%luLU, %luLU}, ", file.time_created.low, file.time_created.high);
-    fprintf(output, "{%luLU, %luLU}, ", file.time_modified.low, file.time_modified.high);
-    fprintf(output, "{%luLU, %luLU}, ", file.time_accessed.low, file.time_accessed.high);
-    fprintf(output, "\"%s\", ", file.name);
-    fprintf(output, "\"bakr %s\", ", file.name);
-    fprintf(output, "bakr_file_%s_content", recipe.name_normalized);
-    fprintf(output, "};\n");
-}
-
 BAKR_API BAKR_INLINE void bakr_cook(bakr_recipe *recipies, int recipies_count, const char *output_filename, const char *year, const char *author)
 {
     int i;
+    unsigned long j;
 
     FILE *output = fopen(output_filename, "w");
 
@@ -222,9 +190,33 @@ BAKR_API BAKR_INLINE void bakr_cook(bakr_recipe *recipies, int recipies_count, c
     /* (3) bake files into C */
     for (i = 0; i < recipies_count; i++)
     {
-        bakr_internal_file f1 = bakr_internal_file_read(recipies[i].name_file);
-        bakr_internal_cook_file(output, f1, recipies[i]);
-        bakr_internal_file_free(&f1);
+        bakr_internal_file file = bakr_internal_file_read(recipies[i].name_file);
+        bakr_recipe recipe = recipies[i];
+
+        /* Content */
+        fprintf(output, "static unsigned char bakr_file_%s_content[] = {", recipe.name_normalized);
+        for (j = 0; j < file.size - j; ++j)
+        {
+            fprintf(output, "0x%02X", file.content[j]);
+            if (j != file.size - 2)
+            {
+                fprintf(output, ", ");
+            }
+        }
+        fprintf(output, "};\n");
+
+        /* File struct */
+        fprintf(output, "static const bakr_file bakr_file_%s = {", recipe.name_normalized);
+        fprintf(output, "%li, ", file.size);
+        fprintf(output, "{%luLU, %luLU}, ", file.time_created.low, file.time_created.high);
+        fprintf(output, "{%luLU, %luLU}, ", file.time_modified.low, file.time_modified.high);
+        fprintf(output, "{%luLU, %luLU}, ", file.time_accessed.low, file.time_accessed.high);
+        fprintf(output, "\"%s\", ", file.name);
+        fprintf(output, "\"bakr %s\", ", file.name);
+        fprintf(output, "bakr_file_%s_content", recipe.name_normalized);
+        fprintf(output, "};\n");
+
+        free(file.content);
     }
 
     /* (4) Total files definitions */
