@@ -173,22 +173,6 @@ const char *bakr_internal_header_comment =
     "See https://github.com/nickscha/bakr for more information.\n"
     "*/\n";
 
-BAKR_API BAKR_INLINE void bakr_internal_cook_header(FILE *output, const char *version, const char *year, const char *author)
-{
-    fprintf(output, bakr_internal_header_comment, version, year, author);
-    fprintf(output, "#ifndef BAKR_BIN_H\n");
-    fprintf(output, "#define BAKR_BIN_H\n");
-}
-
-BAKR_API BAKR_INLINE void bakr_internal_cook_definitions(FILE *output)
-{
-    fprintf(output, "#define BAKR_VERSION \"%s\"\n", BAKR_VERSION);
-    fprintf(output, "\n");
-    fprintf(output, "typedef struct bakr_llu_type\n{\n  unsigned long low;\n  unsigned long high;\n\n} bakr_llu_type;\n\n");
-    fprintf(output, "typedef struct bakr_file\n{\n  unsigned long size;\n  bakr_llu_type time_created;\n  bakr_llu_type time_modified;\n  bakr_llu_type time_accessed;\n  char *name;\n  char *command;\n  unsigned char *content;\n\n} bakr_file;\n");
-    fprintf(output, "\n");
-}
-
 BAKR_API BAKR_INLINE void bakr_internal_cook_file(FILE *output, bakr_internal_file file, bakr_recipe recipe)
 {
     unsigned long i;
@@ -217,10 +201,33 @@ BAKR_API BAKR_INLINE void bakr_internal_cook_file(FILE *output, bakr_internal_fi
     fprintf(output, "};\n");
 }
 
-BAKR_API BAKR_INLINE void bakr_internal_cook_files_info(FILE *output, bakr_recipe *recipies, int recipies_count)
+BAKR_API BAKR_INLINE void bakr_cook(bakr_recipe *recipies, int recipies_count, const char *output_filename, const char *year, const char *author)
 {
     int i;
 
+    FILE *output = fopen(output_filename, "w");
+
+    /* (1) Header */
+    fprintf(output, bakr_internal_header_comment, BAKR_VERSION, year, author);
+    fprintf(output, "#ifndef BAKR_BIN_H\n");
+    fprintf(output, "#define BAKR_BIN_H\n");
+
+    /* (2) typedefs */
+    fprintf(output, "#define BAKR_VERSION \"%s\"\n", BAKR_VERSION);
+    fprintf(output, "\n");
+    fprintf(output, "typedef struct bakr_llu_type\n{\n  unsigned long low;\n  unsigned long high;\n\n} bakr_llu_type;\n\n");
+    fprintf(output, "typedef struct bakr_file\n{\n  unsigned long size;\n  bakr_llu_type time_created;\n  bakr_llu_type time_modified;\n  bakr_llu_type time_accessed;\n  char *name;\n  char *command;\n  unsigned char *content;\n\n} bakr_file;\n");
+    fprintf(output, "\n");
+
+    /* (3) bake files into C */
+    for (i = 0; i < recipies_count; i++)
+    {
+        bakr_internal_file f1 = bakr_internal_file_read(recipies[i].name_file);
+        bakr_internal_cook_file(output, f1, recipies[i]);
+        bakr_internal_file_free(&f1);
+    }
+
+    /* (4) Total files definitions */
     fprintf(output, "\n");
     fprintf(output, "#define BAKR_NUM_FILES (%i)\n", recipies_count);
     fprintf(output, "static const bakr_file bakr_files[BAKR_NUM_FILES] = {");
@@ -233,31 +240,9 @@ BAKR_API BAKR_INLINE void bakr_internal_cook_files_info(FILE *output, bakr_recip
         }
     }
     fprintf(output, "};\n");
-}
 
-BAKR_API BAKR_INLINE void bakr_internal_cook_footer(FILE *output)
-{
+    /* (5) footer */
     fprintf(output, "\n#endif /* BAKR_BIN_H */\n");
-}
-
-BAKR_API BAKR_INLINE void bakr_cook(bakr_recipe *recipies, int recipies_count, const char *output_filename, const char *year, const char *author)
-{
-    int i;
-
-    FILE *output = fopen(output_filename, "w");
-
-    bakr_internal_cook_header(output, BAKR_VERSION, year, author);
-    bakr_internal_cook_definitions(output);
-
-    for (i = 0; i < recipies_count; i++)
-    {
-        bakr_internal_file f1 = bakr_internal_file_read(recipies[i].name_file);
-        bakr_internal_cook_file(output, f1, recipies[i]);
-        bakr_internal_file_free(&f1);
-    }
-
-    bakr_internal_cook_files_info(output, recipies, recipies_count);
-    bakr_internal_cook_footer(output);
 
     fclose(output);
 
