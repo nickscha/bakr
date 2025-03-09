@@ -85,9 +85,9 @@ typedef struct WIN32_FILE_ATTRIBUTE_DATA
 
 BAKR_API BAKR_INLINE void bakr_win32_internal_file_read_timestat(bakr_internal_file *file)
 {
-    bakr_llu_type_internal time_created;
-    bakr_llu_type_internal time_modified;
-    bakr_llu_type_internal time_accessed;
+    bakr_llu_type_internal time_created = {0};
+    bakr_llu_type_internal time_modified = {0};
+    bakr_llu_type_internal time_accessed = {0};
 
     WIN32_FILE_ATTRIBUTE_DATA fad;
     GetFileAttributesExA(file->name, 0, &fad);
@@ -118,6 +118,9 @@ BAKR_API BAKR_INLINE void bakr_internal_file_read_timestat(bakr_internal_file *f
 
 BAKR_API BAKR_INLINE bakr_internal_file bakr_internal_file_read(const char *filename)
 {
+    unsigned long chunk;
+    unsigned long bytes_read = 0;
+
     FILE *file;
 
     bakr_internal_file result = {0};
@@ -130,11 +133,17 @@ BAKR_API BAKR_INLINE bakr_internal_file bakr_internal_file_read(const char *file
     if (!file)
     {
         printf("[bakr] file not found: %s\n", filename);
-        return (result);
+        return (tmp);
     }
 
     fseek(file, 0, SEEK_END);
     result.size = (unsigned long)ftell(file);
+    if (result.size == -1UL)
+    {
+        fclose(file);
+        return (tmp);
+    }
+
     rewind(file);
 
     /* Allocate memory for file content */
@@ -145,12 +154,18 @@ BAKR_API BAKR_INLINE bakr_internal_file bakr_internal_file_read(const char *file
         return (tmp);
     }
 
-    if (fread(result.content, 1, result.size, file) != result.size)
+    while (bytes_read < result.size)
     {
-        free(result.content);
-        fclose(file);
-        return (tmp);
+        chunk = (unsigned long)fread(result.content + bytes_read, 1, result.size - bytes_read, file);
+        if (chunk == 0)
+        {
+            free(result.content);
+            fclose(file);
+            return (tmp);
+        }
+        bytes_read += chunk;
     }
+
     result.content[result.size] = '\0'; /* Null-terminate in case it's text */
 
     fclose(file);
@@ -175,6 +190,12 @@ BAKR_API BAKR_INLINE void bakr_cook(bakr_recipe *recipies, int recipies_count, c
 
     FILE *output = fopen(output_filename, "w");
 
+    if (!output)
+    {
+        printf("[bakr] Could not open output file: %s\n", output_filename);
+        return;
+    }
+
     /* (1) Header */
     fprintf(output, bakr_internal_header_comment, BAKR_VERSION, year, author);
     fprintf(output, "#ifndef BAKR_BIN_H\n");
@@ -193,12 +214,18 @@ BAKR_API BAKR_INLINE void bakr_cook(bakr_recipe *recipies, int recipies_count, c
         bakr_internal_file file = bakr_internal_file_read(recipies[i].name_file);
         bakr_recipe recipe = recipies[i];
 
+        if (file.size <= 0 || !file.content)
+        {
+            printf("[bakr] Failed to read file: %s\n", recipe.name_file);
+            continue;
+        }
+
         /* Content */
         fprintf(output, "static unsigned char bakr_file_%s_content[] = {", recipe.name_normalized);
-        for (j = 0; j < file.size - j; ++j)
+        for (j = 0; j < file.size; ++j)
         {
             fprintf(output, "0x%02X", file.content[j]);
-            if (j != file.size - 2)
+            if (j != file.size - 1)
             {
                 fprintf(output, ", ");
             }
@@ -207,7 +234,7 @@ BAKR_API BAKR_INLINE void bakr_cook(bakr_recipe *recipies, int recipies_count, c
 
         /* File struct */
         fprintf(output, "static const bakr_file bakr_file_%s = {", recipe.name_normalized);
-        fprintf(output, "%li, ", file.size);
+        fprintf(output, "%luLU, ", file.size);
         fprintf(output, "{%luLU, %luLU}, ", file.time_created.low, file.time_created.high);
         fprintf(output, "{%luLU, %luLU}, ", file.time_modified.low, file.time_modified.high);
         fprintf(output, "{%luLU, %luLU}, ", file.time_accessed.low, file.time_accessed.high);
@@ -238,7 +265,7 @@ BAKR_API BAKR_INLINE void bakr_cook(bakr_recipe *recipies, int recipies_count, c
 
     fclose(output);
 
-    printf("[bakr] executables baked successfully into: %s", output_filename);
+    printf("[bakr] executables baked successfully into: %s\n", output_filename);
 }
 
 #endif /* BAKR_H */
