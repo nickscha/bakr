@@ -85,29 +85,47 @@ typedef struct WIN32_FILE_ATTRIBUTE_DATA
 
 BAKR_API BAKR_INLINE void bakr_win32_internal_file_read_timestat(bakr_internal_file *file)
 {
-    bakr_llu_type_internal time_created = {0};
-    bakr_llu_type_internal time_modified = {0};
-    bakr_llu_type_internal time_accessed = {0};
-
     WIN32_FILE_ATTRIBUTE_DATA fad;
-    GetFileAttributesExA(file->name, 0, &fad);
-    time_created.low = fad.ftCreationTime.low;
-    time_created.high = fad.ftCreationTime.high;
-    time_modified.low = fad.ftLastWriteTime.low;
-    time_modified.high = fad.ftLastWriteTime.high;
-    time_accessed.low = fad.ftLastAccessTime.low;
-    time_accessed.high = fad.ftLastAccessTime.high;
+    if (!GetFileAttributesExA(file->name, 0, &fad))
+    {
+        return;
+    }
 
-    file->time_created = time_created;
-    file->time_modified = time_modified;
-    file->time_accessed = time_accessed;
+    file->time_created.low = fad.ftCreationTime.low;
+    file->time_created.high = fad.ftCreationTime.high;
+    file->time_modified.low = fad.ftLastWriteTime.low;
+    file->time_modified.high = fad.ftLastWriteTime.high;
+    file->time_accessed.low = fad.ftLastAccessTime.low;
+    file->time_accessed.high = fad.ftLastAccessTime.high;
 }
+#elif defined(__linux__) || defined(__APPLE__) /* Linux & macOS */
+#include <sys/stat.h>
+#include <time.h>
+
+BAKR_API BAKR_INLINE void bakr_unix_internal_file_read_timestat(bakr_internal_file *file)
+{
+    struct stat file_stat;
+    if (stat(file->name, &file_stat) != 0)
+    {
+        return;
+    }
+
+    file->time_created.low = (unsigned long)file_stat.st_ctime;
+    file->time_created.high = 0;
+    file->time_modified.low = (unsigned long)file_stat.st_mtime;
+    file->time_modified.high = 0;
+    file->time_accessed.low = (unsigned long)file_stat.st_atime;
+    file->time_accessed.high = 0;
+}
+
 #endif
 
 BAKR_API BAKR_INLINE void bakr_internal_file_read_timestat(bakr_internal_file *file)
 {
 #ifdef _WIN32
     bakr_win32_internal_file_read_timestat(file);
+#elif defined(__linux__) || defined(__APPLE__)
+    bakr_unix_internal_file_read_timestat(file);
 #else
     (void)file;
 #endif
