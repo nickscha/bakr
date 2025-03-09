@@ -193,14 +193,6 @@ BAKR_API BAKR_INLINE bakr_internal_file bakr_internal_file_read(const char *file
     return (result);
 }
 
-const char *bakr_internal_header_comment =
-    "/* bakr.h - v%s - public domain data structures - %s %s\n"
-    "\n"
-    "A C89 standard compliant, single header, nostdlib (no C Standard Library) util that bakes files into C code.\n"
-    "\n"
-    "See https://github.com/nickscha/bakr for more information.\n"
-    "*/\n";
-
 BAKR_API BAKR_INLINE void bakr_cook(bakr_recipe *recipies, int recipies_count, const char *output_filename, const char *year, const char *author)
 {
     int i;
@@ -215,7 +207,10 @@ BAKR_API BAKR_INLINE void bakr_cook(bakr_recipe *recipies, int recipies_count, c
     }
 
     /* (1) Header */
-    fprintf(output, bakr_internal_header_comment, BAKR_VERSION, year, author);
+    fprintf(output, "/* bakr.h - v%s - public domain data structures - %s %s\n\nA C89 standard compliant, single header, nostdlib (no C Standard Library) util that bakes files into C code.\n\nSee https://github.com/nickscha/bakr for more information.\n*/\n",
+            BAKR_VERSION,
+            year,
+            author);
     fprintf(output, "#ifndef BAKR_BIN_H\n");
     fprintf(output, "#define BAKR_BIN_H\n");
 
