@@ -71,7 +71,9 @@ typedef struct bakr_recipe
 } bakr_recipe;
 
 #ifdef _WIN32
+#ifndef _WINDOWS_
 int GetFileAttributesExA(const char *lpFileName, void *fInfoLevelId, void *lpFileInformation);
+#endif
 
 typedef struct WIN32_FILE_ATTRIBUTE_DATA
 {
