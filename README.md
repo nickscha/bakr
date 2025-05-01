@@ -1,5 +1,5 @@
 # bakr (in development)
-A C89 standard compliant, single header, nostdlib (no C Standard Library) util that bakes files into C89 header files.
+A C89 standard compliant, single header, nostdlib (no C Standard Library) util that bakes files/binaries into C89 header files.
 
 For more information please look at the "bakr.h" file or take a look at the "examples" or "tests" folder.
 
