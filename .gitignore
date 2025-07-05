@@ -1,6 +1,7 @@
 # Prerequisites
 *.d
 *.json
+bakr_bin.h
 
 # Object files
 *.o
