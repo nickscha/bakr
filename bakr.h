@@ -29,17 +29,15 @@ LICENSE
 /* Check if using C99 or later (inline is supported) */
 #if __STDC_VERSION__ >= 199901L
 #define BAKR_INLINE inline
-#define BAKR_API extern
 #elif defined(__GNUC__) || defined(__clang__)
 #define BAKR_INLINE __inline__
-#define BAKR_API static
 #elif defined(_MSC_VER)
 #define BAKR_INLINE __inline
-#define BAKR_API static
 #else
 #define BAKR_INLINE
-#define BAKR_API static
 #endif
+
+#define BAKR_API static
 
 #define BAKR_VERSION "0.1"
 #define BAKR_ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
